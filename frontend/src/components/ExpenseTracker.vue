@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-3xl mx-auto p-6 mt-10 bg-gray-50 rounded-lg shadow-md">
 
-    <!-- Landing Page -->
+    <!-- Landing page -->
     <div v-if="!showExpenses">
       <h1 class="text-3xl font-bold mb-6 text-green-600">💰 Expense Tracker</h1>
 
@@ -31,7 +31,7 @@
       </button>
     </div>
 
-    <!-- Expenses Page -->
+    <!-- Expenses page -->
     <div v-else>
       <button @click="showExpenses = false"
               class="mb-4 bg-gray-300 text-black p-2 rounded hover:bg-gray-400 transition-colors">
