@@ -1,111 +1,119 @@
 <template>
-  <div class="max-w-3xl mx-auto p-6 mt-10 bg-gray-50 rounded-lg shadow-md">
+  <div class="min-h-screen bg-gray-100 flex flex-col items-center p-6">
+    <h1 class="text-3xl font-bold mb-6">💰 Expense Tracker</h1>
 
-    <!-- Landing page -->
-    <div v-if="!showExpenses">
-      <h1 class="text-3xl font-bold mb-6 text-green-600">💰 Expense Tracker</h1>
-
-      <form @submit.prevent="addExpense" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <input v-model="description" type="text" placeholder="Description"
-               class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-400" required />
-
-        <input v-model.number="amount" type="number" placeholder="Amount"
-               class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-400" required />
-
-        <select v-model="category" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-400">
-          <option>Food</option>
-          <option>Travel</option>
-          <option>Entertainment</option>
-          <option>Other</option>
-        </select>
-
-        <button type="submit"
-                class="bg-green-600 text-white rounded p-2 hover:bg-green-700 transition-colors font-semibold">
-          Add
-        </button>
-      </form>
-
-      <button @click="showExpenses = true"
-              class="fixed top-4 right-4 bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition-colors">
-        View Expenses
+    <!-- Add expense form -->
+    <div class="bg-white p-6 rounded-2xl shadow w-full max-w-md mb-6">
+      <input
+        v-model="newExpense.name"
+        type="text"
+        placeholder="Expense name"
+        class="w-full mb-3 p-2 border rounded"
+      />
+      <input
+        v-model.number="newExpense.amount"
+        type="number"
+        placeholder="Amount"
+        class="w-full mb-3 p-2 border rounded"
+      />
+      <select
+        v-model="newExpense.category"
+        class="w-full mb-3 p-2 border rounded"
+      >
+        <option disabled value="">Select category</option>
+        <option>Food</option>
+        <option>Travel</option>
+        <option>Shopping</option>
+        <option>Entertainment</option>
+        <option>Other</option>
+      </select>
+      <button
+        @click="addExpense"
+        class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition"
+      >
+        ➕ Add Expense
       </button>
     </div>
 
-    <!-- Expenses page -->
-    <div v-else>
-      <button @click="showExpenses = false"
-              class="mb-4 bg-gray-300 text-black p-2 rounded hover:bg-gray-400 transition-colors">
-        ← Back
-      </button>
+    <!-- Toggle expenses view -->
+    <button
+      @click="toggleExpenses"
+      class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition"
+    >
+      {{ showExpenses ? "Hide Expenses" : "View Expenses" }}
+    </button>
 
-      <h2 class="text-2xl font-bold mb-4">All Expenses</h2>
+    <!-- Expenses list -->
+    <div
+      v-if="showExpenses"
+      class="mt-6 w-full max-w-3xl bg-white p-6 rounded-2xl shadow"
+    >
+      <h2 class="text-xl font-semibold mb-4">📊 Expenses by Category</h2>
 
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse shadow-sm">
-          <thead>
-            <tr class="bg-green-100">
-              <th class="p-2 border">Description</th>
-              <th class="p-2 border">Amount</th>
-              <th class="p-2 border">Category</th>
+      <div v-for="(items, category) in groupedExpenses" :key="category" class="mb-6">
+        <h3 class="text-lg font-bold mb-2">{{ category }} (Total: £{{ categoryTotal(items) }})</h3>
+        <table class="w-full text-left border">
+          <thead class="bg-gray-200">
+            <tr>
+              <th class="p-2">Name</th>
+              <th class="p-2">Amount</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(expense, index) in expenses" :key="index" class="hover:bg-green-50">
-              <td class="p-2 border">{{ expense.description }}</td>
-              <td class="p-2 border">${{ expense.amount }}</td>
-              <td class="p-2 border">{{ expense.category }}</td>
+            <tr v-for="expense in items" :key="expense.id" class="border-t">
+              <td class="p-2">{{ expense.name }}</td>
+              <td class="p-2">£{{ expense.amount }}</td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
-
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import { ref, computed } from "vue"
 
-// State
-const description = ref('')
-const amount = ref(0)
-const category = ref('Food')
 const expenses = ref([])
+const newExpense = ref({ name: "", amount: null, category: "" })
 const showExpenses = ref(false)
 
-// Fetch expenses from backend
-const fetchExpenses = async () => {
-  try {
-    const res = await axios.get('http://localhost:8080/api/expenses')
-    expenses.value = res.data
-  } catch (err) {
-    console.error(err)
+function addExpense() {
+  if (!newExpense.value.name || !newExpense.value.amount || !newExpense.value.category) {
+    alert("Please fill in all fields")
+    return
   }
+  expenses.value.push({
+    id: Date.now(),
+    name: newExpense.value.name,
+    amount: newExpense.value.amount,
+    category: newExpense.value.category,
+  })
+  newExpense.value = { name: "", amount: null, category: "" }
 }
 
-// Add expense
-const addExpense = async () => {
-  if (!description.value || amount.value <= 0) return
-
-  try {
-    const res = await axios.post('http://localhost:8080/api/expenses', {
-      description: description.value,
-      amount: amount.value,
-      category: category.value
-    })
-    expenses.value.push(res.data)
-    description.value = ''
-    amount.value = 0
-    category.value = 'Food'
-  } catch (err) {
-    console.error(err)
-  }
+function toggleExpenses() {
+  showExpenses.value = !showExpenses.value
 }
 
-onMounted(fetchExpenses)
+// Group expenses by category
+const groupedExpenses = computed(() => {
+  return expenses.value.reduce((groups, expense) => {
+    if (!groups[expense.category]) {
+      groups[expense.category] = []
+    }
+    groups[expense.category].push(expense)
+    return groups
+  }, {})
+})
+
+function categoryTotal(items) {
+  return items.reduce((sum, exp) => sum + exp.amount, 0)
+}
 </script>
 
-<style scoped>
-tr { transition: background-color 0.3s ease; }
+<style>
+body {
+  font-family: system-ui, sans-serif;
+}
 </style>
